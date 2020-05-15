@@ -16,6 +16,7 @@ public class UserRestController {
     @Resource(name="userRestJPAServiceImpl")
     UserRestService userRestService;
 
+    @CrossOrigin
     @PostMapping("/user")
     public @ResponseBody AjaxResponse saveUser(@RequestBody User user) {
 
@@ -28,6 +29,7 @@ public class UserRestController {
         }
     }
 
+    @CrossOrigin
     @DeleteMapping("/user/{id}")
     public @ResponseBody AjaxResponse deleteUser(@PathVariable Long id) {
 
@@ -40,6 +42,7 @@ public class UserRestController {
         }
     }
 
+    @CrossOrigin
     @PutMapping("/user")
     public @ResponseBody AjaxResponse updateUser(@RequestBody User user) {
 
@@ -52,6 +55,7 @@ public class UserRestController {
         }
     }
 
+    @CrossOrigin
     @GetMapping( "/user")
     public @ResponseBody AjaxResponse getUserByName(@RequestParam String userName) {
         try{

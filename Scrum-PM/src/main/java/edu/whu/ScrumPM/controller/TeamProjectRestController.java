@@ -14,6 +14,7 @@ public class TeamProjectRestController {
     @Resource(name= "teamProjectRestJPAServiceImpl")
     TeamProjectRestService teamProjectRestService;
 
+    @CrossOrigin
     @PostMapping("/teamProject")
     public @ResponseBody
     AjaxResponse saveTeamProject(@RequestBody TeamProject teamProject) {
@@ -26,16 +27,18 @@ public class TeamProjectRestController {
         }
     }
 
+    @CrossOrigin
     @DeleteMapping("/teamProject/{id}")
     public @ResponseBody AjaxResponse deleteTeamProject(@PathVariable Long id) {
         try {
             teamProjectRestService.deleteTeamProject(id);
             return AjaxResponse.success(id);
         }catch (Exception e){
-            return AjaxResponse.fail(e);
+            return AjaxResponse.failMes("没有此id对应的团队项目");
         }
     }
 
+    @CrossOrigin
     @PutMapping("/teamProject")
     public @ResponseBody AjaxResponse updateTeamProject(@RequestBody TeamProject teamProject) {
 

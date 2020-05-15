@@ -5,7 +5,9 @@ import edu.whu.ScrumPM.dao.teamProject.TeamProject;
 import edu.whu.ScrumPM.model.AjaxResponse;
 import edu.whu.ScrumPM.model.IterationVO;
 import edu.whu.ScrumPM.model.TaskVO;
+import edu.whu.ScrumPM.service.iteration.IterationRestService;
 import edu.whu.ScrumPM.service.task.TaskRestService;
+import edu.whu.ScrumPM.service.user.UserRestService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,40 +19,54 @@ public class TaskRestController {
     @Resource(name= "taskRestJPAServiceImpl")
     TaskRestService taskRestService;
 
+    @Resource(name= "iterationJPARestServiceImpl")
+    IterationRestService iterationRestService;
+
+    @Resource(name="userRestJPAServiceImpl")
+    UserRestService userRestService;
+
+    @CrossOrigin
     @PostMapping("/task")
     public @ResponseBody
     AjaxResponse saveTask(@RequestBody IterationVO iterationVO) {
-
+        TaskVO taskVO=iterationVO.getTaskVOs().get(0);
         try {
-            TaskVO taskVO=iterationVO.getTaskVOs().get(0);
-            Task task=Task.builder()
-                    .iterationId(iterationVO.getIterationId())
-                    .taskBeginTime(taskVO.getTaskBeginTime())
-                    .taskEndTime(taskVO.getTaskEndTime())
-                    .taskPriority(taskVO.getTaskPriority())
-                    .taskRemark(taskVO.getTaskRemark())
-                    .taskState(taskVO.getTaskState())
-                    .endTime(taskVO.getEndTime())
-                    .taskName(taskVO.getTaskName())
-                    .userId(taskVO.getTaskExecutor().getUserId())
-                    .build();
-            taskVO.setTaskId(taskRestService.saveTask(task).getTaskId());
-            return AjaxResponse.success(taskVO);
+            iterationRestService.getIteration(iterationVO.getIterationId());
         }catch (Exception e){
-            return AjaxResponse.fail(e);
+            return AjaxResponse.failMes("没有此id对应的迭代");
         }
+        try {
+            userRestService.getUserByUserId(iterationVO.getTaskVOs().get(0).getTaskExecutor().getUserId());
+        }catch (Exception e){
+            return AjaxResponse.failMes("没有此id对应的用户");
+        }
+        Task task=Task.builder()
+                .iterationId(iterationVO.getIterationId())
+                .taskBeginTime(taskVO.getTaskBeginTime())
+                .taskEndTime(taskVO.getTaskEndTime())
+                .taskPriority(taskVO.getTaskPriority())
+                .taskRemark(taskVO.getTaskRemark())
+                .taskState(taskVO.getTaskState())
+                .endTime(taskVO.getEndTime())
+                .taskName(taskVO.getTaskName())
+                .userId(taskVO.getTaskExecutor().getUserId())
+                .build();
+        taskVO.setTaskId(taskRestService.saveTask(task).getTaskId());
+        return AjaxResponse.success(taskVO);
     }
 
+    @CrossOrigin
     @DeleteMapping("/task/{id}")
     public @ResponseBody AjaxResponse deleteIteration(@PathVariable Long id){
         try {
             taskRestService.deleteTask(id);
             return AjaxResponse.success(id);
         }catch (Exception e){
-            return AjaxResponse.fail(e);
+            return AjaxResponse.failMes("没有此id对应的任务");
         }
     }
 
+    @CrossOrigin
     @PutMapping("/task")
     public @ResponseBody AjaxResponse updateTask(@RequestBody TaskVO taskVO){
         try{

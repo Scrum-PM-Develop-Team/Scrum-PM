@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -37,5 +38,10 @@ public class TeamProjectRestJPAServiceImpl implements TeamProjectRestService {
     public TeamProject getTeamProject(Long teamProjectId) {
         Optional<TeamProject> teamProject=teamProjectRepository.findByTeamProjectId(teamProjectId);
         return teamProject.get();
+    }
+
+    @Override
+    public List<TeamProject> getAll() {
+        return teamProjectRepository.findAll();
     }
 }

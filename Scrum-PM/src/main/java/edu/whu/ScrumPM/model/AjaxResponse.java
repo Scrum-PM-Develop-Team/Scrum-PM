@@ -41,5 +41,14 @@ public class AjaxResponse {
         return resultBean;
     }
 
+    public static AjaxResponse failMes(String message) {
+        AjaxResponse resultBean = new AjaxResponse();
+        resultBean.setIsok(false);
+        resultBean.setCode(403);
+        resultBean.setMessage(message);
+        resultBean.setData(message);
+        return resultBean;
+    }
+
 
 }
