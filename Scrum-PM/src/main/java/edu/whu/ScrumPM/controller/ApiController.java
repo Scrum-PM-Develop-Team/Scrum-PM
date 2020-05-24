@@ -18,10 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import springfox.documentation.spring.web.json.Json;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Controller
 @RequestMapping("/api")
@@ -123,13 +121,19 @@ public class ApiController {
             List<Iteration> iterationsForTeamProjectId=
                     iterationRestService.getIterationByTeamProjectId(teamProject.getTeamProjectId());
             for (Iteration iterationForTeamProjectId:iterationsForTeamProjectId){
-                List<Task> tasksForIterationId=taskRestService.getTaskByIterationId(iterationForTeamProjectId.getIterationId());
-                allTask+=tasksForIterationId.size();
-                for (Task taskForIterationId:tasksForIterationId){
-                    if (taskForIterationId.getTaskState().equals("已完成")){
-                        completeTask+=1;
+                try {
+                    List<Task> tasksForIterationId=taskRestService.getTaskByIterationId(iterationForTeamProjectId.getIterationId());
+                    allTask+=tasksForIterationId.size();
+                    for (Task taskForIterationId:tasksForIterationId){
+                        if (taskForIterationId.getTaskState().equals("已完成")){
+                            completeTask+=1;
+                        }
                     }
+
+                }catch (Exception e){
+                    continue;
                 }
+
             }
             if (allTask==0){
                 map.put(teamProject.getTeamProjectName(),allTask);
@@ -142,14 +146,19 @@ public class ApiController {
     }
 
     @GetMapping("/taskAssigned")
-    public @ResponseBody AjaxResponse getTasksAssignedPyPerformer(@RequestParam Long teamProjectId){
+    public @ResponseBody AjaxResponse getTasksAssignedByPerformer(@RequestParam Long teamProjectId){
         List<Iteration> iterationsForTeamProjectId=
                 iterationRestService.getIterationByTeamProjectId(teamProjectId);
         List<Long> userIds=new ArrayList<Long>();
         Map<Long, Integer> map = new HashMap<Long, Integer>();
         Map<String,Integer> userMap=new HashMap<String, Integer>();
         for (Iteration iterationForTeamProjectId:iterationsForTeamProjectId){
-            List<Task> tasksForIterationId=taskRestService.getTaskByIterationId(iterationForTeamProjectId.getIterationId());
+            List<Task> tasksForIterationId;
+            try{
+                tasksForIterationId=taskRestService.getTaskByIterationId(iterationForTeamProjectId.getIterationId());
+            }catch (Exception e){
+                continue;
+            }
             for (Task taskForIterationId:tasksForIterationId){
                 if (!map.containsKey(taskForIterationId.getUserId())){
                     map.put(taskForIterationId.getUserId(),1);
@@ -172,8 +181,178 @@ public class ApiController {
     @PutMapping("/task")
     public  @ResponseBody AjaxResponse putTask(@RequestBody TaskVO taskVO){
         Task task=taskRestService.getTask(taskVO.getTaskId());
-        task.setTaskState(taskVO.getTaskState());
+        if(taskVO.getEndTime()!=null){
+            task.setEndTime(taskVO.getEndTime());
+        }
+        if(taskVO.getTaskBeginTime()!=null){
+            task.setTaskBeginTime(taskVO.getTaskBeginTime());
+        }
+        if(taskVO.getTaskEndTime()!=null){
+            task.setTaskEndTime(taskVO.getTaskEndTime());
+        }
+        if(taskVO.getTaskExecutor()!=null){
+            task.setUserId(taskVO.getTaskExecutor().getUserId());
+        }
+        if(taskVO.getTaskName()!=null&&taskVO.getTaskName()!=""){
+            task.setTaskName(taskVO.getTaskName());
+        }
+        if(taskVO.getTaskPriority()!=null&&taskVO.getTaskPriority()!=""){
+            task.setTaskPriority(taskVO.getTaskPriority());
+        }
+        if(taskVO.getTaskRemark()!=null&&taskVO.getTaskRemark()!=""){
+            task.setTaskRemark(taskVO.getTaskRemark());
+        }
+        if(taskVO.getTaskState()!=null&&taskVO.getTaskState()!=""){
+            task.setEndTime(taskVO.getEndTime());
+        }
+
         taskRestService.updateTask(task);
         return AjaxResponse.success(task);
+    }
+
+    @GetMapping("/taskComplete")
+    public @ResponseBody AjaxResponse getTasksCompleteByteamProjectId(@RequestParam Long teamProjectId){
+        List<Iteration> iterationsForTeamProjectId=
+                iterationRestService.getIterationByTeamProjectId(teamProjectId);
+        Map<Long, Integer> map = new HashMap<Long, Integer>();
+        Map<Long, Integer> mapComplete = new HashMap<Long, Integer>();
+        for (Iteration iterationForTeamProjectId:iterationsForTeamProjectId){
+            List<Task> tasksForIterationId;
+            try{
+                tasksForIterationId=taskRestService.getTaskByIterationId(iterationForTeamProjectId.getIterationId());
+            }catch (Exception e){
+                continue;
+            }
+            for (Task taskForIterationId:tasksForIterationId){
+                if (!map.containsKey(taskForIterationId.getUserId())){
+                    map.put(taskForIterationId.getUserId(),0);
+                    mapComplete.put(taskForIterationId.getUserId(),0);
+                }else {
+                    if (taskForIterationId.getTaskState().equals("已完成")){
+                        int i= map.get(taskForIterationId.getUserId());
+                        i+=1;
+                        map.remove(taskForIterationId.getUserId());
+                        map.put(taskForIterationId.getUserId(),i);
+                        int j= mapComplete.get(taskForIterationId.getUserId());
+                        j+=1;
+                        mapComplete.remove(taskForIterationId.getUserId());
+                        mapComplete.put(taskForIterationId.getUserId(),i);
+                    }else {
+                        int i= map.get(taskForIterationId.getUserId());
+                        i+=1;
+                        map.remove(taskForIterationId.getUserId());
+                        map.put(taskForIterationId.getUserId(),i);
+                    }
+
+                }
+            }
+        }
+        Map<String, Double> finalMap = new HashMap<String, Double>();
+        for (Long key : map.keySet()) {
+            Integer value = map.get(key);
+            Integer value2 = mapComplete.get(key);
+            User user=userRestService.getUserByUserId(key);
+            if (value==0){
+                finalMap.put(user.getUserName(),0.0);
+            }else {
+                finalMap.put(user.getUserName(),(double)value2/(double)value);
+            }
+        }
+        return AjaxResponse.success(finalMap);
+    }
+
+    @GetMapping("/taskStay")
+    public @ResponseBody AjaxResponse getTasksStayPyteamProjectId(@RequestParam Long teamProjectId){
+        List<Iteration> iterationsForTeamProjectId=
+                iterationRestService.getIterationByTeamProjectId(teamProjectId);
+        int[] data03={0,0,0,0};
+        int[] data39={0,0,0,0};
+        int[] data9_={0,0,0,0};
+        for (Iteration iterationForTeamProjectId:iterationsForTeamProjectId){
+            List<Task> tasksForIterationId;
+            try{
+                tasksForIterationId=taskRestService.getTaskByIterationId(iterationForTeamProjectId.getIterationId());
+            }catch (Exception e){
+                continue;
+            }
+            for (Task taskForIterationId:tasksForIterationId){
+                int d= differentDays(taskForIterationId.getTaskBeginTime(),new Date());
+                if (d<3){
+                    if (taskForIterationId.getTaskState().equals(("准备中"))){
+                        data03[0]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("开发中")))
+                    {
+                        data03[1]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("测试中"))){
+                        data03[2]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("已完成"))){
+                        data03[3]+=1;
+                    }
+                }
+                else if(d>=3&&d<9){
+                    if (taskForIterationId.getTaskState().equals(("准备中"))){
+                        data39[0]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("开发中")))
+                    {
+                        data39[1]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("测试中"))){
+                        data39[2]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("已完成"))){
+                        data39[3]+=1;
+                    }
+                }
+                else if(d>9){
+                    if (taskForIterationId.getTaskState().equals(("准备中"))){
+                        data9_[0]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("开发中")))
+                    {
+                        data9_[1]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("测试中"))){
+                        data9_[2]+=1;
+                    }
+                    else if(taskForIterationId.getTaskState().equals(("已完成"))){
+                        data9_[3]+=1;
+                    }
+                }
+            }
+        }
+
+        return AjaxResponse.success(new int[][]{data03,data39,data9_});
+    }
+
+    public static int differentDays(Date date1,Date date2){
+        Calendar calendar1 = Calendar.getInstance();
+        calendar1.setTime(date1);
+        Calendar calendar2 = Calendar.getInstance();
+        calendar2.setTime(date2);
+
+        int day1 = calendar1.get(Calendar.DAY_OF_YEAR);
+        int day2 = calendar2.get(Calendar.DAY_OF_YEAR);
+        int year1 = calendar1.get(Calendar.YEAR);
+        int year2 = calendar2.get(Calendar.YEAR);
+
+        if (year1 != year2)  //不同年
+        {
+            int timeDistance = 0;
+            for (int i = year1 ; i < year2 ;i++){ //闰年
+                if (i%4==0 && i%100!=0||i%400==0){
+                    timeDistance += 366;
+                }else { // 不是闰年
+                    timeDistance += 365;
+                }
+            }
+            return  timeDistance + (day2-day1);
+        }else{// 同年
+            return day2-day1;
+        }
+
     }
 }
