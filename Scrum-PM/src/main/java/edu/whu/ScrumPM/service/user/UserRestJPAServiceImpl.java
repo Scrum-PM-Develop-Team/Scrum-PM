@@ -49,4 +49,9 @@ public class UserRestJPAServiceImpl implements UserRestService {
 
         return user.get();
     }
+
+    @Override
+    public List<User> getAll() {
+        return userRepository.findAll();
+    }
 }

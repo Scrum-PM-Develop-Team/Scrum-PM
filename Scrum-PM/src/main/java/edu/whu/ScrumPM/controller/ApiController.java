@@ -328,6 +328,11 @@ public class ApiController {
         return AjaxResponse.success(new int[][]{data03,data39,data9_});
     }
 
+    @GetMapping("/getAllUser")
+    public @ResponseBody AjaxResponse getAll(){
+        return AjaxResponse.success(userRestService.getAll());
+    }
+
     public static int differentDays(Date date1,Date date2){
         Calendar calendar1 = Calendar.getInstance();
         calendar1.setTime(date1);
